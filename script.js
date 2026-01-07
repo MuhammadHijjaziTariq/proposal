@@ -16,10 +16,10 @@ class Paper {
   rotating = false;
 
   init(paper) {
-    // Unified move handler (Mouse + Touch)
-    const moveHandler = (e) => {
-      let clientX, clientY;
+    const handleMove = (e) => {
+      e.preventDefault(); // Stop the page from scrolling!
       
+      let clientX, clientY;
       if (e.type === 'touchmove') {
         clientX = e.touches[0].clientX;
         clientY = e.touches[0].clientY;
@@ -31,22 +31,8 @@ class Paper {
       if(!this.rotating) {
         this.mouseX = clientX;
         this.mouseY = clientY;
-        
         this.velX = this.mouseX - this.prevMouseX;
         this.velY = this.mouseY - this.prevMouseY;
-      }
-        
-      const dirX = clientX - this.mouseTouchX;
-      const dirY = clientY - this.mouseTouchY;
-      const dirLength = Math.sqrt(dirX*dirX+dirY*dirY);
-      const dirNormalizedX = dirX / dirLength;
-      const dirNormalizedY = dirY / dirLength;
-
-      const angle = Math.atan2(dirNormalizedY, dirNormalizedX);
-      let degrees = 180 * angle / Math.PI;
-      degrees = (360 + Math.round(degrees)) % 360;
-      if(this.rotating) {
-        this.rotation = degrees;
       }
 
       if(this.holdingPaper) {
@@ -61,11 +47,11 @@ class Paper {
       }
     };
 
-    document.addEventListener('mousemove', moveHandler);
-    document.addEventListener('touchmove', moveHandler, { passive: false });
+    // Use passive: false to allow e.preventDefault() to work
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('touchmove', handleMove, { passive: false });
 
-    // Start handler (Mouse + Touch)
-    const startHandler = (e) => {
+    const handleStart = (e) => {
       if(this.holdingPaper) return; 
       this.holdingPaper = true;
       
@@ -81,33 +67,30 @@ class Paper {
         clientY = e.clientY;
       }
 
-      if(e.button === 0 || e.type === 'touchstart') {
-        this.mouseTouchX = clientX;
-        this.mouseTouchY = clientY;
-        this.prevMouseX = clientX;
-        this.prevMouseY = clientY;
-      }
+      this.mouseTouchX = clientX;
+      this.mouseTouchY = clientY;
+      this.prevMouseX = clientX;
+      this.prevMouseY = clientY;
+
       if(e.button === 2) {
         this.rotating = true;
       }
     };
 
-    paper.addEventListener('mousedown', startHandler);
-    paper.addEventListener('touchstart', startHandler, { passive: false });
+    paper.addEventListener('mousedown', handleStart);
+    paper.addEventListener('touchstart', handleStart, { passive: false });
 
-    // End handler
-    const endHandler = () => {
+    const handleEnd = () => {
       this.holdingPaper = false;
       this.rotating = false;
     };
 
-    window.addEventListener('mouseup', endHandler);
-    window.addEventListener('touchend', endHandler);
+    window.addEventListener('mouseup', handleEnd);
+    window.addEventListener('touchend', handleEnd);
   }
 }
 
 const papers = Array.from(document.querySelectorAll('.paper'));
-
 papers.forEach(paper => {
   const p = new Paper();
   p.init(paper);
