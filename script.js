@@ -16,17 +16,28 @@ class Paper {
   rotating = false;
 
   init(paper) {
-    document.addEventListener('mousemove', (e) => {
+    // Unified move handler (Mouse + Touch)
+    const moveHandler = (e) => {
+      let clientX, clientY;
+      
+      if (e.type === 'touchmove') {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+      }
+
       if(!this.rotating) {
-        this.mouseX = e.clientX;
-        this.mouseY = e.clientY;
+        this.mouseX = clientX;
+        this.mouseY = clientY;
         
         this.velX = this.mouseX - this.prevMouseX;
         this.velY = this.mouseY - this.prevMouseY;
       }
         
-      const dirX = e.clientX - this.mouseTouchX;
-      const dirY = e.clientY - this.mouseTouchY;
+      const dirX = clientX - this.mouseTouchX;
+      const dirY = clientY - this.mouseTouchY;
       const dirLength = Math.sqrt(dirX*dirX+dirY*dirY);
       const dirNormalizedX = dirX / dirLength;
       const dirNormalizedY = dirY / dirLength;
@@ -48,29 +59,50 @@ class Paper {
 
         paper.style.transform = `translateX(${this.currentPaperX}px) translateY(${this.currentPaperY}px) rotateZ(${this.rotation}deg)`;
       }
-    })
+    };
 
-    paper.addEventListener('mousedown', (e) => {
+    document.addEventListener('mousemove', moveHandler);
+    document.addEventListener('touchmove', moveHandler, { passive: false });
+
+    // Start handler (Mouse + Touch)
+    const startHandler = (e) => {
       if(this.holdingPaper) return; 
       this.holdingPaper = true;
       
       paper.style.zIndex = highestZ;
       highestZ += 1;
       
-      if(e.button === 0) {
-        this.mouseTouchX = this.mouseX;
-        this.mouseTouchY = this.mouseY;
-        this.prevMouseX = this.mouseX;
-        this.prevMouseY = this.mouseY;
+      let clientX, clientY;
+      if (e.type === 'touchstart') {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+      }
+
+      if(e.button === 0 || e.type === 'touchstart') {
+        this.mouseTouchX = clientX;
+        this.mouseTouchY = clientY;
+        this.prevMouseX = clientX;
+        this.prevMouseY = clientY;
       }
       if(e.button === 2) {
         this.rotating = true;
       }
-    });
-    window.addEventListener('mouseup', () => {
+    };
+
+    paper.addEventListener('mousedown', startHandler);
+    paper.addEventListener('touchstart', startHandler, { passive: false });
+
+    // End handler
+    const endHandler = () => {
       this.holdingPaper = false;
       this.rotating = false;
-    });
+    };
+
+    window.addEventListener('mouseup', endHandler);
+    window.addEventListener('touchend', endHandler);
   }
 }
 
